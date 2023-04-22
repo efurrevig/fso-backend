@@ -22,6 +22,24 @@ app.get('/api/notes', (request, response) => {
     })
 })
 
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+    } 
+  
+    next(error)
+  }
+  
+app.use(errorHandler)
+
 //create note
 app.post('/api/notes/', (request, response) => {
     const body = request.body
@@ -46,8 +64,13 @@ app.post('/api/notes/', (request, response) => {
 //get individual note with id #
 app.get('/api/notes/:id', (request, response) => {
     Note.findById(request.params.id).then(note => {
-        response.json(note)
+        if (note) {
+            response.json(note)
+        } else {
+            response.status(404).end()
+        }
     })
+    .catch(error => next(error))
 })
 
 //change note
