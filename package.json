@@ -10,7 +10,8 @@
     "build:iu": "rm -rf build && cd ../../react_notes && npm run build && cp -r build ../react_intro/express-example",
     "deploy": "fly deploy",
     "deploy:full": "npm run build:iu && npm run deploy",
-    "logs:prod": "fly logs"
+    "logs:prod": "fly logs",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +22,7 @@
     "mongoose": "^7.0.4"
   },
   "devDependencies": {
+    "eslint": "^8.39.0",
     "nodemon": "^2.0.22"
   }
 }
