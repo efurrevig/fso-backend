@@ -14,90 +14,114 @@ beforeEach(async () => {
     }
 })
 
-test('notes are returned as json', async () => {
-    await api
-        .get('/api/notes')
-        .expect(200)
-        .expect('Content-Type', /application\/json/)
+describe('when there are notes in the database', () => {
+
+    test('notes are returned as json', async () => {
+        await api
+            .get('/api/notes')
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+    })
+
+    test('there are four notes', async () => {
+        const response = await api.get('/api/notes')
+
+        expect(response.body).toHaveLength(helper.initialNotes.length)
+    })
+
+    test('a specific note is within the returned notes', async () => {
+        const response = await api.get('/api/notes')
+        const contents = response.body.map(r => r.content)
+
+        expect(contents).toContain('HTML is easy')
+    })
+
+
 })
 
-test('there are four notes', async () => {
-    const response = await api.get('/api/notes')
+describe('viewing a specific note', () => {
+    test('succeeds with a valid id', async () => {
+        const notesAtStart = await helper.notesInDb()
+        const noteToView = notesAtStart[0]
 
-    expect(response.body).toHaveLength(helper.initialNotes.length)
+        const resultNote = await api
+            .get(`/api/notes/${noteToView.id}`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+
+        expect(resultNote.body).toEqual(noteToView)
+    })
+
+    test('fails with statuscode 404 if note does not exist', async () => {
+        const validNonExistingId = await helper.nonExistingId()
+        await api
+            .get(`/api/notes/${validNonExistingId}`)
+            .expect(404)
+    })
+
+    test('fails with statuscode 400 if id is invalid', async () => {
+        const invalidId = '2jo2j30492j3409202934j02394j'
+        await api
+            .get(`/api/notes/${invalidId}`)
+            .expect(400)
+    })
 })
-
-test('a specific note is within the returned notes', async () => {
-    const response = await api.get('/api/notes')
-    const contents = response.body.map(r => r.content)
-
-    expect(contents).toContain('HTML is easy')
-})
-
 
 //post
-test('a valid note can be added', async () => {
-    const newNote = {
-        content: 'test added note',
-        important: true,
-    }
+describe('addition of a new note', () => {
 
-    await api
-        .post('/api/notes')
-        .send(newNote)
-        .expect(201)
-        .expect('Content-Type', /application\/json/)
+    test('a valid note can be added', async () => {
+        const newNote = {
+            content: 'test added note',
+            important: true,
+        }
 
-    const notesAtEnd = await helper.notesInDb()
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length+1)
+        await api
+            .post('/api/notes')
+            .send(newNote)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
 
-    const contents = notesAtEnd.map(n => n.content)
-    expect(contents).toContain('test added note')
+        const notesAtEnd = await helper.notesInDb()
+        expect(notesAtEnd).toHaveLength(helper.initialNotes.length+1)
+
+        const contents = notesAtEnd.map(n => n.content)
+        expect(contents).toContain('test added note')
+    })
+
+    test('an invalid note cannot be added', async () => {
+        const newNote = {
+            important: true
+        }
+
+        await api
+            .post('/api/notes')
+            .send(newNote)
+            .expect(400)
+
+        const notesAtEnd = await helper.notesInDb()
+        expect(notesAtEnd).toHaveLength(helper.initialNotes.length)
+    })
+
 })
 
-test('an invalid note cannot be added', async () => {
-    const newNote = {
-        important: true
-    }
+describe('deletion of a note', () => {
+    test('succeeds with status code 204 if id is valid', async () => {
+        const notesAtStart = await helper.notesInDb()
+        const noteToDelete = notesAtStart[0]
 
-    await api
-        .post('/api/notes')
-        .send(newNote)
-        .expect(400)
+        await api
+            .delete(`/api/notes/${noteToDelete.id}`)
+            .expect(204)
 
-    const notesAtEnd = await helper.notesInDb()
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length)
-})
+        const notesAtEnd = await helper.notesInDb()
+        expect(notesAtEnd).toHaveLength(helper.initialNotes.length-1)
+
+        const contents = notesAtEnd.map(r => r.content)
+        expect(contents).not.toContain(noteToDelete.content)
+    })
 
 
-
-//show
-test('a specific note can be viewed', async () => {
-    const notesAtStart = await helper.notesInDb()
-    const noteToView = notesAtStart[0]
-
-    const resultNote = await api
-        .get(`/api/notes/${noteToView.id}`)
-        .expect(200)
-        .expect('Content-Type', /application\/json/)
-
-    expect(resultNote.body).toEqual(noteToView)
-})
-
-//destroy
-test('a note can be delete', async () => {
-    const notesAtStart = await helper.notesInDb()
-    const noteToDelete = notesAtStart[0]
-
-    await api
-        .delete(`/api/notes/${noteToDelete.id}`)
-        .expect(204)
-
-    const notesAtEnd = await helper.notesInDb()
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length-1)
-
-    const contents = notesAtEnd.map(r => r.content)
-    expect(contents).not.toContain(noteToDelete.content)
 })
 
 afterAll(async () => {
