@@ -1,4 +1,4 @@
-const Note = require('../models/note')
+const Note = require('../../models/note')
 
 const initialNotes = [
     {
@@ -19,7 +19,7 @@ const initialNotes = [
     }
 ]
 
-const nonExistingId = async() => {
+const nonExistingId = async () => {
     const note = new Note({ content: 'willremovethissoon' })
     await note.save()
     await note.deleteOne()

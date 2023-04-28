@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
-const helper = require('./test_helper')
+const helper = require('./test_helpers/note_api_helper')
 const app = require('../app')
 const api = supertest(app)
 const Note = require('../models/note')
@@ -40,6 +40,7 @@ describe('when there are notes in the database', () => {
 })
 
 describe('viewing a specific note', () => {
+
     test('succeeds with a valid id', async () => {
         const notesAtStart = await helper.notesInDb()
         const noteToView = notesAtStart[0]
@@ -65,9 +66,10 @@ describe('viewing a specific note', () => {
             .get(`/api/notes/${invalidId}`)
             .expect(400)
     })
+
 })
 
-//post
+
 describe('addition of a new note', () => {
 
     test('a valid note can be added', async () => {
@@ -120,8 +122,6 @@ describe('deletion of a note', () => {
         const contents = notesAtEnd.map(r => r.content)
         expect(contents).not.toContain(noteToDelete.content)
     })
-
-
 })
 
 afterAll(async () => {
