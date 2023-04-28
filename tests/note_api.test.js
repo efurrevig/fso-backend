@@ -4,6 +4,10 @@ const helper = require('./test_helpers/note_api_helper')
 const app = require('../app')
 const api = supertest(app)
 const Note = require('../models/note')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+
 
 
 beforeEach(async () => {
@@ -71,6 +75,14 @@ describe('viewing a specific note', () => {
 
 
 describe('addition of a new note', () => {
+    beforeEach(async () => {
+        await User.deleteMany({})
+
+        const passwordHash = await bcrypt.hash('sekret', 10)
+        const user = new User({ username: 'root', passwordHash })
+
+        await user.save()
+    })
 
     test('a valid note can be added', async () => {
         const newNote = {
@@ -78,8 +90,13 @@ describe('addition of a new note', () => {
             important: true,
         }
 
+        const loggedInUser = await api
+            .post('/api/login')
+            .send({ username: 'root', password: 'sekret' })
+
         await api
             .post('/api/notes')
+            .set('Authorization', `Bearer ${loggedInUser.body.token}`)
             .send(newNote)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -96,8 +113,13 @@ describe('addition of a new note', () => {
             important: true
         }
 
+        const loggedInUser = await api
+            .post('/api/login')
+            .send({ username: 'root', password: 'sekret' })
+
         await api
             .post('/api/notes')
+            .set('Authorization', `Bearer ${loggedInUser.body.token}`)
             .send(newNote)
             .expect(400)
 
